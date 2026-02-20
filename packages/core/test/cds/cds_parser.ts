@@ -1450,4 +1450,99 @@ define view Test as select from tab1 as T1
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("hierarchy without siblings order by clause", () => {
+    const cds = `define hierarchy I_MyHierarchy_NoSiblings
+  as parent child hierarchy (
+    source I_OrgUnit
+    child to parent association _Parent
+    start where IsRoot = 'X'
+    multiple parents allowed
+  )
+{
+  key NodeID,
+  ParentNodeID,
+  HierarchyLevel
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy without start where clause", () => {
+    const cds = `define hierarchy I_MyHierarchy_NoStart
+  as parent child hierarchy (
+    source I_OrgUnit
+    child to parent association _Parent
+    siblings order by OrgUnitName ascending
+    multiple parents allowed
+  )
+{
+  key NodeID,
+  ParentNodeID,
+  HierarchyLevel
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy with cycles breakup clause", () => {
+    const cds = `define hierarchy I_MyHierarchy_Cycles
+  as parent child hierarchy (
+    source I_OrgUnit
+    child to parent association _Parent
+    start where IsRoot = 'X'
+    siblings order by OrgUnitName ascending
+    cycles breakup
+  )
+{
+  key NodeID,
+  ParentNodeID,
+  HierarchyLevel
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy with siblings order by multiple fields", () => {
+    const cds = `define hierarchy I_MyHierarchy_MultiSort
+  as parent child hierarchy (
+    source I_OrgUnit
+    child to parent association _Parent
+    start where IsRoot = 'X'
+    siblings order by OrgUnitName ascending, OrgUnitID descending
+    multiple parents allowed
+  )
+{
+  key NodeID,
+  ParentNodeID,
+  HierarchyLevel
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy with with parameters clause", () => {
+    const cds = `define hierarchy I_MyHierarchy_Params
+  with parameters
+    p_effective_date : abap.dats,
+    p_language       : abap.lang
+  as parent child hierarchy (
+    source I_OrgUnit
+    child to parent association _Parent
+    start where IsRoot = 'X'
+    siblings order by OrgUnitName ascending
+  )
+{
+  key NodeID,
+  ParentNodeID,
+  HierarchyLevel
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });
