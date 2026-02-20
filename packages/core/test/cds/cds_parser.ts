@@ -1431,4 +1431,14 @@ define view Test as select from tab1 as T1
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("two annotations concatenated on same line without space", () => {
+    const cds = `@AbapCatalog.preserveKey:true@AbapCatalog.compiler.compareFilter:true
+define view ZTestView as select from ztable {
+  key field1
+}`;
+    const file = new MemoryFile("ztestview.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });
