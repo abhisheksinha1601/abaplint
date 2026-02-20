@@ -16,7 +16,7 @@ import {CDSInteger} from "./cds_integer";
  *                    | unary val                       -- unary form
  *                    | unary val (op operand)+         -- unary + continuation
  *   operand         →  CDSArithParen | val
- *   CDSArithParen   →  "(" CDSArithmetics ")" | "(" val ")"
+ *   CDSArithParen   →  "(" CDSArithmetics ")" | "(" CDSArithParen ")" | "(" val ")"
  */
 export class CDSArithmetics extends Expression {
   public getRunnable(): IStatementRunnable {
@@ -28,7 +28,8 @@ export class CDSArithmetics extends Expression {
     const unaryExpression = seq(unary, val);
 
     // An operand is either a parenthesized sub-expression (any depth) or a bare value.
-    // CDSArithParen = "(" altPrio(CDSArithmetics, val) ")" — different singleton, no infinite loop.
+    // CDSArithParen = "(" altPrio(CDSArithmetics, CDSArithParen, val) ")" — separate singleton that
+    // can recursively contain itself, enabling deeply nested parentheses without infinite recursion.
     const operand = altPrio(CDSArithParen, val);
     const operatorValue = seq(operator, operand);
 
