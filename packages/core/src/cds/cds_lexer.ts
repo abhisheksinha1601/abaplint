@@ -155,6 +155,11 @@ export class CDSLexer {
           build = result.add(build, row, col, mode);
           result.add(next, row, col, mode);
           break;
+        case "@":
+          // @ starts a new annotation; flush current token and start building with @
+          build = result.add(build, row, col, mode);
+          build = "@";
+          break;
         default:
           build += next;
           break;
