@@ -6,13 +6,14 @@ export class CDSDefineHierarchy extends Expression {
   public getRunnable(): IStatementRunnable {
     const field = seq(star(CDSAnnotation), opt("KEY"), CDSName);
     const sortDirection = altPrio("ASCENDING", "DESCENDING");
-    const siblingsOrder = seq("SIBLINGS", "ORDER", "BY", CDSName, opt(sortDirection));
+    const siblingsOrderField = seq(CDSName, opt(sortDirection));
+    const siblingsOrder = seq("SIBLINGS", "ORDER", "BY", siblingsOrderField, star(seq(",", siblingsOrderField)));
 
     const hierarchyBody = seq(
       "SOURCE", CDSName,
       "CHILD", "TO", "PARENT", "ASSOCIATION", CDSName,
       opt(seq("START", "WHERE", CDSCondition)),
-      star(siblingsOrder),
+      opt(siblingsOrder),
       opt(seq("MULTIPLE", "PARENTS", "ALLOWED")),
       opt(seq("CYCLES", "BREAKUP")),
     );
@@ -22,7 +23,7 @@ export class CDSDefineHierarchy extends Expression {
       "DEFINE", "HIERARCHY", CDSName,
       opt(CDSWithParameters),
       "AS", "PARENT", "CHILD", "HIERARCHY", "(", hierarchyBody, ")",
-      "{", star(seq(field, opt(","))), "}",
+      "{", seq(field, star(seq(",", field))), "}",
       opt(";"),
     );
   }
