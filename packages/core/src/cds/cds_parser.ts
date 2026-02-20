@@ -37,6 +37,9 @@ export class CDSParser {
       res = Combi.run(new Expressions.CDSExtendView(), tokens, defaultVersion);
     }
     if (res === undefined || !(res[0] instanceof ExpressionNode)) {
+      res = Combi.run(new Expressions.CDSDefineHierarchy(), tokens, defaultVersion);
+    }
+    if (res === undefined || !(res[0] instanceof ExpressionNode)) {
       return undefined;
     }
     return res[0];

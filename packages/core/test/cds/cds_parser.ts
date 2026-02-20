@@ -1431,4 +1431,23 @@ define view Test as select from tab1 as T1
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("define hierarchy with parent child hierarchy syntax", () => {
+    const cds = `define hierarchy I_MyHierarchy
+  as parent child hierarchy (
+    source I_OrgUnit
+    child to parent association _Parent
+    start where IsRoot = 'X'
+    siblings order by OrgUnitName ascending
+    multiple parents allowed
+  )
+{
+  key NodeID,
+  ParentNodeID,
+  HierarchyLevel
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });

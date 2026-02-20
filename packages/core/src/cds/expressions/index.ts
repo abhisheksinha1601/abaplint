@@ -14,6 +14,7 @@ export * from "./cds_composition";
 export * from "./cds_condition";
 export * from "./cds_define_abstract";
 export * from "./cds_define_custom";
+export * from "./cds_define_hierarchy";
 export * from "./cds_define_projection";
 export * from "./cds_define_table_function";
 export * from "./cds_define_view";
