@@ -1,4 +1,4 @@
-import {CDSAggregate, CDSAnnotation, CDSArithmetics, CDSCase, CDSFunction, CDSInteger, CDSName, CDSPrefixedName, CDSString, CDSType} from ".";
+import {CDSAggregate, CDSAnnotation, CDSArithParen, CDSArithmetics, CDSCase, CDSFunction, CDSInteger, CDSName, CDSPrefixedName, CDSString, CDSType} from ".";
 import {Expression, optPrio, seq, alt, starPrio, altPrio} from "../../abap/2_statements/combi";
 import {IStatementRunnable} from "../../abap/2_statements/statement_runnable";
 import {CDSAs} from "./cds_as";
@@ -14,6 +14,7 @@ export class CDSElement extends Expression {
                altPrio(CDSAggregate,
                        CDSString,
                        CDSArithmetics,
+                       CDSArithParen,
                        CDSFunction,
                        CDSCast,
                        CDSCase,
