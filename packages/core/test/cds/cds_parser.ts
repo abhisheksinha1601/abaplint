@@ -1650,4 +1650,73 @@ define view Test as select from tab { Field }`;
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("path filter with integer cardinality and join type [1:left outer]", () => {
+    const cds = `define view Test as select from tab {
+  cast(dd07t[1:left outer].ddtext as mytype) as TextName
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("datasource alias named 'virtual' does not conflict with VIRTUAL keyword", () => {
+    const cds = `define view Test as select from P_Source as virtual
+{
+  key virtual.UUID,
+  virtual.Material,
+  virtual.Plant
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("enum fixed value with dotted string literal (#enum.'value')", () => {
+    const cds = `define view Test as select from src { key src.Field }
+where active = #icl_active.'A'`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("CASE THEN value with cast followed by arithmetic operator (cast(x) * -1)", () => {
+    const cds = `define view Test as select from src {
+  case when src.Dir = 'SELL'
+       then cast( case when src.D < src.D2 then 1 else 0 end as mytype ) * -1
+       else cast( case when src.D < src.D2 then 1 else 0 end as mytype )
+  end as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("cast with arithmetic expression inside (cast(a * b as type))", () => {
+    const cds = `define view Test as select from src {
+  cast( src.A * src.B as mytype ) as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("cast with function * constant inside (cast(division() * 100 as type))", () => {
+    const cds = `define view Test as select from src {
+  cast(division(src.A, src.B, 3) * 100 as mytype) as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("condition comparison with parenthesized function call on right side (field >= (function()))", () => {
+    const cds = `define view Test as select from src {
+  case when src.Qty >= (division(src.A, 100, 3))
+       then 1 else 0 end as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });

@@ -5,14 +5,22 @@ import {CDSParameters} from "./cds_parameters";
 import {CDSParametersSelect} from "./cds_parameters_select";
 import {CDSCondition} from "./cds_condition";
 import {CDSInteger} from "./cds_integer";
+import {CDSString} from "./cds_string";
 
 export class CDSPrefixedName extends Expression {
   public getRunnable(): IStatementRunnable {
-    // Path filter: [integer: condition], [condition], or join-type redirect [inner]/[left outer]/[cross]
-    const joinRedirect = seq("[", altPrio("LEFT OUTER", "INNER", "CROSS"), "]");
-    const pathFilter = altPrio(joinRedirect, seq("[", CDSInteger, ":", CDSCondition, "]"), seq("[", CDSCondition, "]"));
+    // Path filter variants:
+    //   [inner], [left outer], [cross]              — join-type redirect
+    //   [1:left outer], [1:inner]                   — cardinality + join-type
+    //   [1: condition]                              — cardinality + filter condition
+    //   [condition]                                 — filter condition only
+    const joinType = altPrio("LEFT OUTER", "INNER", "CROSS");
+    const joinRedirect = seq("[", joinType, "]");
+    const cardinalityJoin = seq("[", CDSInteger, ":", joinType, "]");
+    const pathFilter = altPrio(cardinalityJoin, joinRedirect, seq("[", CDSInteger, ":", CDSCondition, "]"), seq("[", CDSCondition, "]"));
     // Each dotted segment may have its own path filter: A[cond].B[cond].C
-    const segment = seq(".", CDSName, opt(CDSParameters), opt(pathFilter));
+    // The final segment may also be a string literal: #enum.'value'
+    const segment = seq(".", altPrio(CDSString, CDSName), opt(CDSParameters), opt(pathFilter));
     return seq(CDSName, opt(altPrio(CDSParameters, CDSParametersSelect)), opt(pathFilter), star(segment));
   }
 }
