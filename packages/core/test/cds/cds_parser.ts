@@ -1490,4 +1490,164 @@ define view ZTestView as select from ztable {
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("LEFT OUTER TO MANY join", () => {
+    const cds = `define view Test as select from T1
+    left outer to many join T2 as t2 on t2.id = T1.id
+{
+  key T1.field1
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("annotation with null value", () => {
+    const cds = `define view Test as select from tab {
+  key f1,
+      @ObjectModel.foreignKey.association: null
+  key f2
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("cast with parenthesized case expression", () => {
+    const cds = `define view Test as select from tab {
+  cast((
+    case when A = 0 then B else C end
+  ) as my_type) as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("cast with parenthesized function expression", () => {
+    const cds = `define view Test as select from tab {
+  cast((concat(concat(a, b), c)) as my_type) as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("path filter on association field in cast", () => {
+    const cds = `define view Test as select from tab
+  association [0..*] to I_Text as _Text on $projection.ID = _Text.ID
+{
+  cast(_Text[1: Language = $session.system_language].TextDesc as my_type) as TextDesc
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("chained path filters with multi-line condition", () => {
+    const cds = `define view Test as select from tab {
+  WBSElement._ProfitCenter[1: ValidityEndDate >= $session.system_date
+    and ValidityStartDate <= $session.system_date ]._Text[1: Language = $session.system_language].ProfitCenterName as ProfitCenterName
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("CASE with arithmetic expression (-1)*field in THEN", () => {
+    const cds = `define view Test as select from tab {
+  case when Status = 'X' then (-1)*Amount
+       else Amount
+  end as SignedAmount
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("fltp_to_dec function with AS type argument", () => {
+    const cds = `define view Test as select from tab {
+  fltp_to_dec( Quantity as abap.dec(13,3) ) as Quantity
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("annotation with #(string) value", () => {
+    const cds = `@AccessControl.personalData.blocking: #('TRANSACTIONAL_DATA')
+define view Test as select from tab { key Field }`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("path filter without integer prefix (condition only)", () => {
+    const cds = `define view Test as select from tab {
+  _SetHeader._SetHeaderText[ Language = $session.system_language ].SetDescription as ActivityTypeGroupName
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("path filter with join type redirect [inner]", () => {
+    const cds = `define view Test as select from tab {
+  _PTRSmallBusiness[inner].Supplier
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("parameterized association in CASE WHEN condition", () => {
+    const cds = `define view Test as select from tab {
+  case
+    when _Assoc( P_Currency:$parameters.P_Currency ).Amount = 0
+    then 0
+    else 1
+  end as Val
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("aggregate with arithmetic operator as element (sum*(-1))", () => {
+    const cds = `define view Test as select from tab {
+  sum(Amount)*(-1) as NegAmount,
+  cast(sum(TaxAmount)*(-1) as mytype) as NegTaxAmount
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("annotation with negative number value", () => {
+    const cds = `@Consumption.defaultValue: -30
+define view Test as select from tab { Field }`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("string with em-dash (U+2013) in annotation label", () => {
+    const cds = "@EndUserText.label: 'Billing Item \u2013 Cube'\ndefine view Test as select from tab { Field }";
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("CASE THEN with aggregate and arithmetic (sum * -1)", () => {
+    const cds = `define view Test as select from tab {
+  case Field
+    when 'L' then sum(Amount)
+    when 'S' then sum(Amount) * -1
+    else sum(Amount)
+  end as SignedAmount
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });

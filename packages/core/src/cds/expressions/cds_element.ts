@@ -11,9 +11,9 @@ export class CDSElement extends Expression {
 
     return seq(starPrio(CDSAnnotation),
                optPrio(altPrio("KEY", "VIRTUAL")),
-               altPrio(CDSAggregate,
+               altPrio(CDSArithmetics,
+                       CDSAggregate,
                        CDSString,
-                       CDSArithmetics,
                        CDSArithParen,
                        CDSFunction,
                        CDSCast,

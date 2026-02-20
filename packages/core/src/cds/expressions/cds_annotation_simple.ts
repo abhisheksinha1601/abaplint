@@ -8,8 +8,11 @@ export class CDSAnnotationSimple extends Expression {
     const value = alt(CDSString,
                       "true",
                       "false",
+                      "null",
+                      seq("-", regex(/^\d+$/)),
                       regex(/^\d+$/),
                       seq(regex(/^\d+$/), ".", regex(/^\d+$/)),
+                      seq("#", "(", CDSString, ")"),
                       seq("#", "(", regex(/^[\w_]+$/), ")"),
                       regex(/^#[\w_]+$/));
 

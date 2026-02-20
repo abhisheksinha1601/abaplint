@@ -1,4 +1,4 @@
-import {CDSFunctionInput, CDSName} from ".";
+import {CDSFunctionInput, CDSName, CDSType} from ".";
 import {altPrio, Expression, seq, starPrio} from "../../abap/2_statements/combi";
 import {IStatementRunnable} from "../../abap/2_statements/statement_runnable";
 
@@ -54,6 +54,8 @@ export class CDSFunction extends Expression {
     const left = seq("LEFT", "(", CDSFunctionInput, ",", CDSFunctionInput, ")");
     const right = seq("RIGHT", "(", CDSFunctionInput, ",", CDSFunctionInput, ")");
 
+    const fltp_to_dec = seq("FLTP_TO_DEC", "(", CDSFunctionInput, "AS", CDSType, ")");
+
     const conversionInput = seq(CDSName, "=", ">", CDSFunctionInput);
     const conversionInputs = seq(conversionInput, starPrio(seq(",", conversionInput)));
     const unitConversion = seq("UNIT_CONVERSION", "(", conversionInputs, ")");
@@ -67,6 +69,6 @@ export class CDSFunction extends Expression {
                    abap_system_timezone, abap_user_timezone, bintohex, hextobin,
                    dats_add_days, dats_add_months, tstmp_to_dst, dats_tims_to_tstmp, mod,
                    left, right, lpad, rpad, instr, length, ltrim, rtrim, replace,
-                   unitConversion, currencyConversion, decimalShift);
+                   unitConversion, currencyConversion, decimalShift, fltp_to_dec);
   }
 }

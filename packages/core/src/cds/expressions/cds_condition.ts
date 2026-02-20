@@ -1,12 +1,11 @@
-import {CDSAggregate, CDSFunction, CDSName, CDSString} from ".";
+import {CDSAggregate, CDSFunction, CDSPrefixedName, CDSString} from ".";
 import {altPrio, Expression, optPrio, seq, starPrio} from "../../abap/2_statements/combi";
 import {IStatementRunnable} from "../../abap/2_statements/statement_runnable";
 import {CDSInteger} from "./cds_integer";
 
 export class CDSCondition extends Expression {
   public getRunnable(): IStatementRunnable {
-    const name = seq(CDSName, starPrio(seq(".", altPrio(CDSString, CDSName))));
-    const left = altPrio(CDSString, CDSFunction, CDSAggregate, name);
+    const left = altPrio(CDSString, CDSFunction, CDSAggregate, CDSPrefixedName);
     const operators = altPrio("=", seq("!", "="), seq("<", ">"), seq(">", "="), seq("<", "="), "<", ">", "LIKE", "NOT LIKE");
     const compare = seq(operators, altPrio(left, CDSInteger));
     const is = seq("IS", optPrio("NOT"), altPrio("INITIAL", "NULL"));
