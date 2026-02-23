@@ -1736,6 +1736,28 @@ where active = #icl_active.'A'`;
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("hierarchy with parameterized source and orphans ignore clause", () => {
+    const cds = `define hierarchy I_Test
+  with parameters P_Key: kokrs, P_Group: setnamenew
+  as parent child hierarchy(
+    source I_Source(P_Key: $parameters.P_Key, P_Group: $parameters.P_Group)
+    child to parent association _Child
+    start where SetClass = '0101' and SetSubClass = $parameters.P_Key
+    siblings order by SetClass, SetSubClass
+    multiple parents allowed
+    orphans ignore
+    cycles breakup
+  )
+{
+  key SetClass,
+  key SetSubClass,
+      ChildSetClass
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
   it("GROUP BY with parameterized association path", () => {
     const cds = `define view Test
   with parameters P_Key: sydate, P_Type: mytype
