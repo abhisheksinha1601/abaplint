@@ -1736,4 +1736,21 @@ where active = #icl_active.'A'`;
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("GROUP BY with parameterized association path", () => {
+    const cds = `define view Test
+  with parameters P_Key: sydate, P_Type: mytype
+  as select from src( P_Key: :P_Key )
+{
+  key Field1,
+  sum(Amount) as Amount
+}
+group by
+  Field1,
+  _Assoc( P_Key: :P_Key, P_Type: :P_Type ).ReportingPeriod,
+  _Assoc( P_Key: :P_Key, P_Type: :P_Type ).ReportingYear`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });
