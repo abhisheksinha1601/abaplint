@@ -14,6 +14,7 @@ export class CDSCondition extends Expression {
     const between = seq("BETWEEN", left, "AND", left);
     const condition = seq(optPrio("NOT"), left, altPrio(compare, is, between));
     const paren = seq("(", CDSCondition, ")");
-    return seq(altPrio(condition, paren), starPrio(seq(altPrio("AND", "OR"), altPrio(condition, paren))));
+    const notParen = seq("NOT", paren);
+    return seq(altPrio(condition, notParen, paren), starPrio(seq(altPrio("AND", "OR"), altPrio(condition, notParen, paren))));
   }
 }

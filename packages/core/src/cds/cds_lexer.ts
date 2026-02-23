@@ -124,6 +124,7 @@ export class CDSLexer {
 
       switch (next) {
         case "'":
+          build = result.add(build, row, col, mode);
           mode = Mode.String;
           build += next;
           break;

@@ -15,6 +15,8 @@ import {CDSInteger} from "./cds_integer";
  *   CDSArithmetics  →  operand (op operand)+          -- with-operator form
  *                    | unary val                       -- unary form
  *                    | unary val (op operand)+         -- unary + continuation
+ *                    | unary CDSArithParen             -- unary applied to paren, e.g. -(field)
+ *                    | unary CDSArithParen (op op)+    -- unary paren + continuation
  *   operand         →  CDSArithParen | val
  *   CDSArithParen   →  "(" CDSArithmetics ")" | "(" CDSArithParen ")" | "(" val ")"
  */
@@ -43,11 +45,16 @@ export class CDSArithmetics extends Expression {
     const parenExpr = altPrio(withOperators, unaryExpression);
     const paren = seq("(", parenExpr, ")");
 
+    // Unary applied to a parenthesized group, e.g. -(TaxAmount)
+    const unaryParen = seq(unary, CDSArithParen);
+
     return altPrio(
-      seq(paren, starPrio(operatorValue)),  // (expr) op ...
-      unaryWithOps,                          // -val op ...
-      unaryExpression,                       // -val
-      withOperators,                         // operand op operand ...
+      seq(paren, starPrio(operatorValue)),        // (expr) op ...
+      seq(unaryParen, starPrio(operatorValue)),   // -(paren) op ...
+      unaryWithOps,                               // -val op ...
+      unaryExpression,                            // -val
+      unaryParen,                                 // -(paren)
+      withOperators,                              // operand op operand ...
     );
   }
 }

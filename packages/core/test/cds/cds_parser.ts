@@ -1758,6 +1758,49 @@ where active = #icl_active.'A'`;
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("hierarchy field list with $node pseudo-field path", () => {
+    const cds = `define hierarchy I_Test
+  as parent child hierarchy(
+    source I_Source
+    child to parent association _Parent
+  )
+{
+  key ID,
+  $node.node_id         as NodeID,
+  $node.parent_id       as ParentID,
+  $node.hierarchy_level as Level
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("WHERE clause with NOT followed by parenthesized condition group", () => {
+    const cds = `define view Test as select from tab { key Field }
+where Status = 'C'
+     or not(
+        (
+          Date >= $session.system_date
+        )
+        or(
+          Date = '00000000'
+        )
+      )`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("association with WITH DEFAULT FILTER clause", () => {
+    const cds = `define view Test as select from tab as _T
+association [0..1] to I_Text as _Text on $projection.ID = _Text.ID
+                                     with default filter _Text.Language = $session.system_language
+{ key _T.field, _Text }`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
   it("GROUP BY with parameterized association path", () => {
     const cds = `define view Test
   with parameters P_Key: sydate, P_Type: mytype
@@ -1770,6 +1813,181 @@ group by
   Field1,
   _Assoc( P_Key: :P_Key, P_Type: :P_Type ).ReportingPeriod,
   _Assoc( P_Key: :P_Key, P_Type: :P_Type ).ReportingYear`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("association path filter with join-type and WHERE condition", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  _Descriptions[ 1: left outer where ( Language = $session.system_language ) ].Name as Name
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("function argument as parenthesized expression", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  concat(( concat_with_space(A, B, 2) ), 'suffix') as Combined
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("CASE THEN with unary minus applied to parenthesized expression", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  case
+    when DocType = 'G'
+    then -(TaxAmount)
+  end as NegatedField
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy SIBLINGS ORDER BY with qualified source-prefixed field name", () => {
+    const cds = `define hierarchy Test
+  with parameters P_Usage : mytype, P_Header : mytype
+  as parent child hierarchy(
+    source Src
+    child to parent association _Tree
+    start where
+          Src.UsageField = :P_Usage
+      and Src.HeaderField = :P_Header
+    siblings order by
+      Src.SortField
+    multiple parents allowed
+  )
+{
+  key $node.hierarchy_rank as HierarchyRank
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("identifier directly preceding string literal without space (e.g. else'')", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  case when Field1 is not null then
+    case when Field2 > 0 then 'X' else'' end
+  else ''
+  end as MyField
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("FROM with parenthesized join chain as primary source", () => {
+    const cds = `define view Test
+  as select from(
+    SrcA as a
+    cross join SrcB as b
+  )
+  left outer to one join SrcC as c on c.id = a.id
+{
+  key a.Field1
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("inner one to many join cardinality", () => {
+    const cds = `define view Test as select from SrcA
+  inner one to many join SrcB on SrcA.id = SrcB.id
+{
+  key SrcA.Field1
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("parenthesized join sub-expression as join target", () => {
+    const cds = `define view Test
+  as select from Src left outer join (SubA as s join SubB b on s.id = b.id and s.type = b.type)
+    on Src.id = s.id
+{
+  key Src.Field1
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("decimal numbers in arithmetic expressions", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  cast(FieldA as abap.fltp) * 100.00 / cast(FieldB as abap.fltp) as Percentage
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("CASE with parenthesized field as case key", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  case (AllocationSetType)
+    when '3' then ''
+    when '4' then ''
+    else SomeField
+  end as MyField
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("left outer many to exact one join cardinality", () => {
+    const cds = `define view Test as select from Src
+    left outer many to exact one join Other on Src.ID = Other.ID
+{
+  key Src.Field1
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("CASE with arithmetic expression as case key", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  case length(FieldA) * 10 + length(FieldB)
+    when 44 then concat(FieldA, FieldB)
+    when 43 then concat_with_space(FieldA, FieldB, 1)
+  end as ComputedField
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy with DIRECTORY clause", () => {
+    const cds = `define hierarchy TestHier
+  with parameters P_UUID : some_uuid
+  as parent child hierarchy(
+    source SrcView
+    child to parent association _Parent
+    directory _Assoc filter by
+      UUID = $parameters.P_UUID
+    siblings order by
+      OrgID
+    orphans root
+  )
+{
+  key UUID,
+  OrgID,
+  $node.node_id as HierarchyNode
+}`;
     const file = new MemoryFile("test.ddls.asddls", cds);
     const parsed = new CDSParser().parse(file);
     expect(parsed).to.be.instanceof(ExpressionNode);
