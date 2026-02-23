@@ -1719,5 +1719,21 @@ where active = #icl_active.'A'`;
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("define view with column alias list", () => {
+    const cds = `define view I_Test(
+    SourceDocument,
+    SourceDocumentItem,
+    ConditionType
+  )
+  as select from SomeTable
+{
+  key cast(PurchasingDocument as awref) as SourceDocument,
+  key field2 as SourceDocumentItem,
+      field3 as ConditionType
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
 
 });
