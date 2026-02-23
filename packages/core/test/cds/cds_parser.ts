@@ -264,6 +264,18 @@ define view zhvamfoocust as select from zhvam_cust
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("define root abstract entity with association", () => {
+    const cds = `
+    define root abstract entity I_PARAM_SHARE_DRAFT
+    {
+      key DummyKey : abap.char(1);
+      Users  : association [1..*] to I_PARAM_SHARE_DRAFT_Content on 1 = 1;
+    }`;
+    const file = new MemoryFile("foobar.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
   it("multi line comment", () => {
     const cds = `
     /*+[hideWarning] { "IDS" : [ "CARDINALITY_CHECK" ]  }       UserID is not key of sdfds*/
@@ -1851,6 +1863,17 @@ group by
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("$extension.* wildcard field in field list", () => {
+    const cds = `define view Test as select from Src {
+  key Field1,
+  Field2,
+  $extension.*
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
   it("hierarchy SIBLINGS ORDER BY with qualified source-prefixed field name", () => {
     const cds = `define hierarchy Test
   with parameters P_Usage : mytype, P_Header : mytype
@@ -1987,6 +2010,51 @@ group by
   key UUID,
   OrgID,
   $node.node_id as HierarchyNode
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("tab-indented CDS fields", () => {
+    // Tabs must be treated as whitespace by the lexer (not included in token strings)
+    const cds = "define root view entity I_TabTest\n\tprovider contract transactional_interface\n\tas projection on I_Src as Doc\n{\t\n\tkey UUID,\n\tField1,\n\t_Child: redirected to composition child I_ChildTP\n}";
+    const file = new MemoryFile("foobar.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("parameters select with negative integer values", () => {
+    const cds = `
+define view I_PlndView
+  as select from I_PlndSource( P_StartDate: -11, P_EndDate: 6 ) as src
+{
+  key src.Field
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("hierarchy with nodetype and cache force clauses", () => {
+    const cds = `
+define hierarchy I_TestHierarchy
+  with parameters P_Root : j_objnr
+  as parent child hierarchy(
+    source I_HierarchySrc
+    child to parent association _Parent
+    start where
+      NodeID = $parameters.P_Root
+    siblings order by
+      NodeID
+    nodetype HierarchyNodeType
+    multiple parents allowed
+    cache force
+  )
+{
+  key NodeID,
+  ParentID,
+  NodeType
 }`;
     const file = new MemoryFile("test.ddls.asddls", cds);
     const parsed = new CDSParser().parse(file);

@@ -16,9 +16,11 @@ export class CDSDefineHierarchy extends Expression {
       opt(directory),
       opt(seq("START", "WHERE", CDSCondition)),
       opt(siblingsOrder),
+      opt(seq("NODETYPE", CDSName)),
       opt(seq("MULTIPLE", "PARENTS", "ALLOWED")),
       opt(seq("ORPHANS", altPrio("IGNORE", "ROOT"))),
       opt(seq("CYCLES", "BREAKUP")),
+      opt(seq("CACHE", altPrio("FORCE", "NONE", "EMPTY"))),
     );
 
     return seq(

@@ -129,6 +129,7 @@ export class CDSLexer {
           build += next;
           break;
         case " ":
+        case "\t":
           build = result.add(build, row, col, mode);
           break;
         case "\n":

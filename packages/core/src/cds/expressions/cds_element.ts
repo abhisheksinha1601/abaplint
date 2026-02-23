@@ -9,9 +9,13 @@ export class CDSElement extends Expression {
     const redirected = seq(": REDIRECTED TO", optPrio(altPrio("PARENT", "COMPOSITION CHILD")), CDSName);
     const colonThing = seq(":", alt(CDSName, CDSType, "LOCALIZED"));
 
+    // $extension.* — extension field wildcard
+    const extensionWildcard = seq("$extension", ".", "*");
+
     return seq(starPrio(CDSAnnotation),
                opt(altPrio("KEY", "VIRTUAL")),
-               altPrio(CDSArithmetics,
+               altPrio(extensionWildcard,
+                       CDSArithmetics,
                        CDSAggregate,
                        CDSString,
                        CDSArithParen,
