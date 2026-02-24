@@ -1,22 +1,53 @@
-import {CDSAggregate, CDSCase, CDSCast, CDSFunction, CDSName, CDSString} from ".";
-import {altPrio, Expression, optPrio, plusPrio, seq, starPrio} from "../../abap/2_statements/combi";
+import {CDSAggregate, CDSArithParen, CDSCase, CDSCast, CDSFunction, CDSPrefixedName, CDSString} from ".";
+import {altPrio, Expression, plusPrio, seq, starPrio} from "../../abap/2_statements/combi";
 import {IStatementRunnable} from "../../abap/2_statements/statement_runnable";
 import {CDSInteger} from "./cds_integer";
 
+/**
+ * Arithmetic expression: one or more values joined by +, -, *, /.
+ *
+ * Parenthesized sub-expressions of any nesting depth are handled via the
+ * separate CDSArithParen singleton (which wraps back to CDSArithmetics).
+ * The mutual reference between two distinct singletons enables true n-level
+ * nesting with no fixed limit and no infinite recursion.
+ *
+ * Grammar (simplified):
+ *   CDSArithmetics  →  operand (op operand)+          -- with-operator form
+ *                    | unary val                       -- unary form
+ *                    | unary val (op operand)+         -- unary + continuation
+ *   operand         →  CDSArithParen | val
+ *   CDSArithParen   →  "(" CDSArithmetics ")" | "(" CDSArithParen ")" | "(" val ")"
+ */
 export class CDSArithmetics extends Expression {
   public getRunnable(): IStatementRunnable {
-    const name = seq(CDSName, optPrio(seq(".", CDSName)));
-    const val = altPrio(CDSInteger, CDSFunction, CDSCase, CDSCast, CDSString, CDSAggregate, name);
+    const val = altPrio(CDSInteger, CDSFunction, CDSCase, CDSCast, CDSString, CDSAggregate, CDSPrefixedName);
     const operator = altPrio("+", "-", "*", "/");
 
-    // Support unary operators (e.g., "- field" in CASE expressions)
+    // Unary operator prefix, e.g. -field, +field
     const unary = altPrio("-", "+");
     const unaryExpression = seq(unary, val);
 
-    const operatorValue = seq(operator, val);
-    const paren = seq("(", val, plusPrio(operatorValue), ")");
-    const noParen = seq(val, plusPrio(operatorValue));
-    // todo: this is pretty bad, it needs a rewrite
-    return altPrio(unaryExpression, seq(paren, starPrio(operatorValue)), noParen);
+    // An operand is either a parenthesized sub-expression (any depth) or a bare value.
+    // CDSArithParen = "(" altPrio(CDSArithmetics, CDSArithParen, val) ")" — separate singleton that
+    // can recursively contain itself, enabling deeply nested parentheses without infinite recursion.
+    const operand = altPrio(CDSArithParen, val);
+    const operatorValue = seq(operator, operand);
+
+    // Main form: operand op operand op ... (leading term may itself be a paren)
+    const withOperators = seq(operand, plusPrio(operatorValue));
+
+    // Unary followed by optional continuation operators: -1 * field, -field + 1
+    const unaryWithOps = seq(unaryExpression, plusPrio(operatorValue));
+
+    // Top-level parenthesized expression as a standalone field value: (A + B) * C
+    const parenExpr = altPrio(withOperators, unaryExpression);
+    const paren = seq("(", parenExpr, ")");
+
+    return altPrio(
+      seq(paren, starPrio(operatorValue)),  // (expr) op ...
+      unaryWithOps,                          // -val op ...
+      unaryExpression,                       // -val
+      withOperators,                         // operand op operand ...
+    );
   }
 }
