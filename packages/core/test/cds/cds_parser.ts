@@ -2076,4 +2076,34 @@ define view I_Test
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("decimal literal in cast", () => {
+    const cds = `define view Test as select from tab {
+  cast( 0.00 as abap.dec(15,2) ) as Amount
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("parenthesized arithmetic as operand in CASE then", () => {
+    const cds = `define view Test as select from tab {
+  case when flag = 'X'
+    then division(A,B,3) + (C - ((division(D,E,3)) * F))
+    else 0
+  end as Result
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
+  it("deeply nested parenthesized arithmetic (8 levels)", () => {
+    const cds = `define view Test as select from tab {
+  (((((((( A + B )))))))) as DeepNested
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });
