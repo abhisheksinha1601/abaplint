@@ -2061,4 +2061,19 @@ define hierarchy I_TestHierarchy
     expect(parsed).to.be.instanceof(ExpressionNode);
   });
 
+  it("parameterized association path traversal in field list", () => {
+    const cds = `
+define view I_Test
+  with parameters P_Key : sydate
+  as select from I_Src as formula
+{
+  key formula.UUID,
+      formula._Assoc( P_KeyDate : $parameters.P_Key ).SpecID as SpecID,
+      formula._Stream( P_KeyDate : $parameters.P_Key )[ Scope = $parameters.P_Key ].StreamQty
+}`;
+    const file = new MemoryFile("test.ddls.asddls", cds);
+    const parsed = new CDSParser().parse(file);
+    expect(parsed).to.be.instanceof(ExpressionNode);
+  });
+
 });

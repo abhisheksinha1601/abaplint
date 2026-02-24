@@ -22,7 +22,8 @@ export class CDSPrefixedName extends Expression {
     const pathFilter = altPrio(cardinalityJoinWhere, cardinalityJoin, joinRedirect, seq("[", CDSInteger, ":", CDSCondition, "]"), seq("[", CDSCondition, "]"));
     // Each dotted segment may have its own path filter: A[cond].B[cond].C
     // The final segment may also be a string literal: #enum.'value'
-    const segment = seq(".", altPrio(CDSString, CDSName), opt(CDSParameters), opt(pathFilter));
+    // A segment may have a parameterized call: _Assoc( P_Key : value ) or _Assoc[filter]
+    const segment = seq(".", altPrio(CDSString, CDSName), opt(altPrio(CDSParametersSelect, CDSParameters)), opt(pathFilter));
     return seq(CDSName, opt(altPrio(CDSParameters, CDSParametersSelect)), opt(pathFilter), star(segment));
   }
 }
