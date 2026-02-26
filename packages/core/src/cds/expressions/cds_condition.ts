@@ -7,8 +7,9 @@ export class CDSCondition extends Expression {
   public getRunnable(): IStatementRunnable {
     const left = altPrio(CDSString, CDSFunction, CDSAggregate, CDSPrefixedName);
     const operators = altPrio("=", seq("!", "="), seq("<", ">"), seq(">", "="), seq("<", "="), "<", ">", "LIKE", "NOT LIKE");
-    // Right side of comparison: arithmetic expressions, parenthesized sub-expressions, or simple values
-    const right = altPrio(CDSArithmetics, CDSArithParen, left, CDSInteger);
+    // Right side of comparison: simple values first, then parenthesized, then full arithmetic last.
+    // CDSArithmetics is last to avoid triggering CDSPrefixedName→CDSCondition→CDSArithmetics cycle.
+    const right = altPrio(CDSArithParen, left, CDSInteger, CDSArithmetics);
     const compare = seq(operators, right, opt(seq("ESCAPE", CDSString)));
     const is = seq("IS", optPrio("NOT"), altPrio("INITIAL", "NULL"));
     const between = seq("BETWEEN", left, "AND", left);
